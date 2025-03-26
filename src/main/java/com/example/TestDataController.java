@@ -15,12 +15,12 @@ import java.util.stream.IntStream;
 public class TestDataController {
 
     private final KafkaProducer<Long, Order> orderProducer;
-    private final KafkaProducer<Long, Customer> customerProducer;
+    private final KafkaProducer<CustomerId, Customer> customerProducer;
     private final KafkaProducer<Long, Address> addressProducer;
 
     private final LocalDate reportingDate = LocalDate.now();
     @Autowired
-    public TestDataController(KafkaProducer<Long, Order> orderProducer, KafkaProducer<Long, Customer> customerProducer, KafkaProducer<Long, Address> addressProducer) {
+    public TestDataController(KafkaProducer<Long, Order> orderProducer, KafkaProducer<CustomerId, Customer> customerProducer, KafkaProducer<Long, Address> addressProducer) {
         this.orderProducer = orderProducer;
         this.customerProducer = customerProducer;
         this.addressProducer = addressProducer;
@@ -48,7 +48,7 @@ public class TestDataController {
     public void customer(@RequestBody AddressDto dto) {
         var key = new CustomerId(dto.id.longValue(), dto.reportingDate);
         Customer customer = new Customer(key, "FirstName" + dto.id, "LastName" + dto.id);
-        customerProducer.send(new ProducerRecord<>("customers", key.getId().longValue(), customer));
+        customerProducer.send(new ProducerRecord<>("customers", key, customer));
     }
 
     @PostMapping("/customer/{size}")
@@ -57,7 +57,7 @@ public class TestDataController {
         IntStream.range(0, size).forEach(i -> {
             var key = new CustomerId((long) i, reportingDate);
             Customer customer = new Customer(key, "FirstName" + i, "LastName" + i);
-            customerProducer.send(new ProducerRecord<>("customers", key.getId(), customer));
+            customerProducer.send(new ProducerRecord<>("customers", key, customer));
         });
 
     }

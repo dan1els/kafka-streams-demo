@@ -1,8 +1,14 @@
 package com.example;
 
+import org.apache.kafka.common.header.Headers;
+import org.apache.kafka.common.serialization.Deserializer;
+import org.apache.kafka.common.serialization.Serdes;
+import org.apache.kafka.common.serialization.Serializer;
 import org.springframework.kafka.support.serializer.JsonSerde;
 
+import java.nio.charset.StandardCharsets;
 import java.time.LocalDate;
+import java.util.Objects;
 
 public class CustomerId {
 
@@ -34,5 +40,39 @@ public class CustomerId {
         this.id = id;
     }
 
-    public static class CustomerIdSerde extends JsonSerde<CustomerId> {}
+    @Override
+    public boolean equals(Object o) {
+        if (o == null || getClass() != o.getClass()) return false;
+        CustomerId that = (CustomerId) o;
+        return Objects.equals(id, that.id) && Objects.equals(reportingDate, that.reportingDate);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(id, reportingDate);
+    }
+
+    public static class CustomerIdSerde extends Serdes.WrapperSerde<CustomerId> {
+        public CustomerIdSerde() {
+            super(new CustomerIdSerdeSerializer(), new CustomerIdSerdeDeserializer());
+        }
+
+        public static class CustomerIdSerdeSerializer implements Serializer<CustomerId> {
+
+            @Override
+            public byte[] serialize(String s, CustomerId customerId) {
+                return String.format("%s#%s", customerId.reportingDate, customerId.id).getBytes(StandardCharsets.UTF_8);
+            }
+
+        }
+
+        public static class CustomerIdSerdeDeserializer implements Deserializer<CustomerId> {
+
+            @Override
+            public CustomerId deserialize(String s, byte[] bytes) {
+                var data = new String(bytes).split("#");
+                return new CustomerId(Long.valueOf(data[1]), LocalDate.parse(data[0]));
+            }
+        }
+    }
 }

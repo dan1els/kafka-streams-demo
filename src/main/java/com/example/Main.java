@@ -53,6 +53,16 @@ public class Main {
         }
 
         @Bean
+        KafkaProducer<CustomerId, Customer> customerProducer() {
+            String bootstrapServers = "localhost:9092";
+            Properties producerConfig = new Properties();
+            producerConfig.put("bootstrap.servers", bootstrapServers);
+            producerConfig.put("key.serializer", CustomerId.CustomerIdSerde.CustomerIdSerdeSerializer.class.getName());
+            producerConfig.put("value.serializer", JsonSerializer.class.getName());
+            return new KafkaProducer<>(producerConfig);
+        }
+
+        @Bean
         <T> KafkaProducer<Long, T> producer() {
             String bootstrapServers = "localhost:9092";
             Properties producerConfig = new Properties();
@@ -73,13 +83,13 @@ public class Main {
         @Autowired
         void buildPipeline(StreamsBuilder streamsBuilder) {
 
-
             KTable<Long, Order> ordersTable = streamsBuilder.table(
                     "orders", Consumed.with(Serdes.Long(), new Order.OrderSerde())
             );
-            KTable<Long, Customer> customersTable = streamsBuilder.table(
+
+            KTable<CustomerId, Customer> customersTable = streamsBuilder.table(
                     "customers",
-                    Consumed.with(Serdes.Long(), new Customer.CustomerSerde())
+                    Consumed.with(new CustomerId.CustomerIdSerde(), new Customer.CustomerSerde())
             );
             KTable<Long, Address> addressesTable = streamsBuilder.table(
                     "addresses",
@@ -90,7 +100,7 @@ public class Main {
             ordersTable
                     .join(
                             customersTable,
-                            (order) -> order.getCustomerId(), // Extract foreign key (customer_id) from com.example.Order
+                            (order) -> new CustomerId(order.getCustomerId(), order.getReportingDate()), // Extract foreign key (customer_id) from com.example.Order
                             EnrichedOrder::new,
                             Materialized.with(Serdes.Long(), new EnrichedOrder.EnrichedOderSerde()) // need to materialize join to add second join
                     )
