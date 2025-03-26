@@ -91,10 +91,10 @@ public class Main {
                     .join(
                             customersTable,
                             (order) -> order.getCustomerId(), // Extract foreign key (customer_id) from com.example.Order
-                            EnrichedOrder::new
-                            //Materialized.with(Serdes.String(), new EnrichedOrder.EnrichedOderSerde())
+                            EnrichedOrder::new,
+                            Materialized.with(Serdes.Long(), new EnrichedOrder.EnrichedOderSerde()) // need to materialize join to add second join
                     )
-                   /* .join(
+                   .join(
                             addressesTable,
                             (order) -> order.getAddressId(), // Extract foreign key (address_id) from com.example.Order
                             (order, address) -> {
@@ -102,7 +102,7 @@ public class Main {
                                 return order; // Enrich order with address details
                             }
                             //Materialized.with(Serdes.String(), new EnrichedOrder.EnrichedOderSerde())
-                    )*/
+                    )
                     .toStream()
                     .peek((key, value) -> System.out.println(value))
                     .to("enriched-orders-out", Produced.with(Serdes.Long(), new EnrichedOrder.EnrichedOderSerde()));
