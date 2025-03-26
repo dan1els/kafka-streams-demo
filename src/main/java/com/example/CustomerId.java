@@ -1,11 +1,15 @@
 package com.example;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import org.apache.kafka.common.header.Headers;
 import org.apache.kafka.common.serialization.Deserializer;
 import org.apache.kafka.common.serialization.Serdes;
 import org.apache.kafka.common.serialization.Serializer;
 import org.springframework.kafka.support.serializer.JsonSerde;
 
+import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.time.LocalDate;
 import java.util.Objects;
@@ -59,19 +63,30 @@ public class CustomerId {
 
         public static class CustomerIdSerdeSerializer implements Serializer<CustomerId> {
 
+            private final ObjectMapper objectMapper = new ObjectMapper().registerModule(new JavaTimeModule());
+
             @Override
             public byte[] serialize(String s, CustomerId customerId) {
-                return String.format("%s#%s", customerId.reportingDate, customerId.id).getBytes(StandardCharsets.UTF_8);
+                try {
+                    return objectMapper.writeValueAsBytes(customerId);
+                } catch (JsonProcessingException e) {
+                    throw new RuntimeException(e);
+                }
             }
 
         }
 
         public static class CustomerIdSerdeDeserializer implements Deserializer<CustomerId> {
 
+            private final ObjectMapper objectMapper = new ObjectMapper().registerModule(new JavaTimeModule());
+
             @Override
             public CustomerId deserialize(String s, byte[] bytes) {
-                var data = new String(bytes).split("#");
-                return new CustomerId(Long.valueOf(data[1]), LocalDate.parse(data[0]));
+                try {
+                    return objectMapper.readValue(bytes, CustomerId.class);
+                } catch (IOException e) {
+                    throw new RuntimeException(e);
+                }
             }
         }
     }
