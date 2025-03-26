@@ -47,7 +47,6 @@ public class Main {
             config.put(StreamsConfig.STATESTORE_CACHE_MAX_BYTES_CONFIG, "10485760"); // 10 MB cache
             config.put(StreamsConfig.DEFAULT_KEY_SERDE_CLASS_CONFIG, Serdes.String().getClass().getName());
             config.put(StreamsConfig.DEFAULT_VALUE_SERDE_CLASS_CONFIG, Serdes.String().getClass().getName());
-            config.put(StreamsConfig.STATE_DIR_CONFIG, "/Users/ruaryec/Developer/work/streams-test/untitled");
 
             return new KafkaStreamsConfiguration(config);
         }
